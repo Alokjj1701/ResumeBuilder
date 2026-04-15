@@ -1,40 +1,43 @@
 package com.resumebuilder.service;
 
-import jakarta.mail.internet.InternetAddress;
-import jakarta.mail.internet.MimeMessage;
-import lombok.RequiredArgsConstructor;
+import com.resend.Resend;
+import com.resend.core.exception.ResendException;
+import com.resend.services.emails.model.CreateEmailOptions;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class EmailService {
 
-    private final JavaMailSender mailSender;
+    private final Resend resend;
+    private final String fromEmail;
+    private final String fromName;
 
-    @Value("${spring.mail.username}")
-    private String fromEmail;
-
-    @Value("${app.email.from-name:Resume Builder}")
-    private String fromName;
+    public EmailService(
+            @Value("${resend.api-key}") String apiKey,
+            @Value("${resend.from-email:onboarding@resend.dev}") String fromEmail,
+            @Value("${app.email.from-name:Resume Builder}") String fromName) {
+        this.resend = new Resend(apiKey);
+        this.fromEmail = fromEmail;
+        this.fromName = fromName;
+    }
 
     @Async
     public void sendOtpEmail(String toEmail, String otp, String userName) {
         try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom(new InternetAddress(fromEmail, fromName));
-            helper.setTo(toEmail);
-            helper.setSubject("Your verification code — Resume Builder");
-            helper.setText(buildOtpHtml(otp, userName), true);
-            mailSender.send(message);
+            CreateEmailOptions params = CreateEmailOptions.builder()
+                    .from(fromName + " <" + fromEmail + ">")
+                    .to(toEmail)
+                    .subject("Your verification code — Resume Builder")
+                    .html(buildOtpHtml(otp, userName))
+                    .build();
+
+            resend.emails().send(params);
             log.info("OTP email sent to {}", toEmail);
-        } catch (Exception e) {
+        } catch (ResendException e) {
             log.error("Failed to send OTP email to {}: {}", toEmail, e.getMessage());
             throw new RuntimeException("Failed to send verification email. Please try again.");
         }
