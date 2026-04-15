@@ -1,0 +1,45 @@
+version: '3.8'
+
+# Development override — run with:
+# docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+
+services:
+  postgres:
+    ports:
+      - "5432:5432"
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_DEVTOOLS_RESTART_ENABLED: "true"
+    volumes:
+      - ./backend/src:/app/src
+      - maven_cache:/root/.m2
+    ports:
+      - "8080:8080"
+      - "5005:5005"  # Remote debug port
+    command: ["mvn", "spring-boot:run", "-Dspring-boot.run.jvmArguments=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"]
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    environment:
+      # BACKEND_URL is used by Vite's server-side proxy (not exposed to the browser)
+      - BACKEND_URL=http://backend:8080
+      # VITE_API_BASE_URL is empty so browser uses relative /api/ paths → Vite proxy
+      - VITE_API_BASE_URL=
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      - node_modules:/app/node_modules
+    ports:
+      - "5173:5173"
+    command: ["npm", "run", "dev", "--", "--host"]
+
+volumes:
+  maven_cache:
+  node_modules:
