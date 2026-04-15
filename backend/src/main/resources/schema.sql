@@ -1,3 +1,17 @@
+-- users must be created first — other tables reference it via FK
+CREATE TABLE IF NOT EXISTS users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255),
+    full_name VARCHAR(255),
+    provider VARCHAR(50) NOT NULL DEFAULT 'local',
+    provider_id VARCHAR(255),
+    is_verified BOOLEAN NOT NULL DEFAULT TRUE,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS templates (
     id VARCHAR(50) PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
@@ -17,29 +31,10 @@ CREATE TABLE IF NOT EXISTS resumes (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Migration: add user_id column if table already exists without it
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns
-        WHERE table_name='resumes' AND column_name='user_id'
-    ) THEN
-        ALTER TABLE resumes ADD COLUMN user_id UUID REFERENCES users(id) ON DELETE CASCADE;
-    END IF;
-END$$;
-
-CREATE TABLE IF NOT EXISTS users (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    email VARCHAR(255) UNIQUE NOT NULL,
-    password_hash VARCHAR(255),
-    full_name VARCHAR(255),
-    provider VARCHAR(50) NOT NULL DEFAULT 'local',
-    provider_id VARCHAR(255),
-    is_verified BOOLEAN NOT NULL DEFAULT TRUE,
-    is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+-- Migration: add user_id column if the table already exists without it.
+-- Uses ADD COLUMN IF NOT EXISTS (supported since PostgreSQL 9.6) to avoid
+-- the DO $$ dollar-quoting syntax that Spring ScriptUtils cannot parse.
+ALTER TABLE resumes ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES users(id) ON DELETE CASCADE;
 
 CREATE TABLE IF NOT EXISTS refresh_tokens (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
