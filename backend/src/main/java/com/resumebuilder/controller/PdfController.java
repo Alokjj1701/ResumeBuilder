@@ -1,6 +1,7 @@
 package com.resumebuilder.controller;
 
 import com.resumebuilder.dto.ResumeDto;
+import com.resumebuilder.entity.User;
 import com.resumebuilder.service.PdfExportService;
 import com.resumebuilder.service.ResumeService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -13,6 +14,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -34,9 +36,9 @@ public class PdfController {
             @ApiResponse(responseCode = "404", description = "Resume not found"),
             @ApiResponse(responseCode = "500", description = "PDF generation failed")
     })
-    public ResponseEntity<byte[]> exportPdf(@PathVariable UUID id) {
+    public ResponseEntity<byte[]> exportPdf(@PathVariable UUID id, @AuthenticationPrincipal User user) {
         try {
-            ResumeDto resume = resumeService.getResumeById(id);
+            ResumeDto resume = resumeService.getResumeById(id, user);
             byte[] pdfBytes = pdfExportService.exportToPdf(resume);
 
             HttpHeaders headers = new HttpHeaders();
