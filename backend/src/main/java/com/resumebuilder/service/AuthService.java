@@ -3,8 +3,12 @@ package com.resumebuilder.service;
 import com.resumebuilder.dto.auth.AuthResponse;
 import com.resumebuilder.dto.auth.LoginRequest;
 import com.resumebuilder.dto.auth.RegisterRequest;
+import com.resumebuilder.dto.auth.RegisterResponse;
+import com.resumebuilder.dto.auth.ResendOtpRequest;
+import com.resumebuilder.dto.auth.VerifyOtpRequest;
 import com.resumebuilder.entity.RefreshToken;
 import com.resumebuilder.entity.User;
+import com.resumebuilder.exception.EmailNotVerifiedException;
 import com.resumebuilder.repository.RefreshTokenRepository;
 import com.resumebuilder.repository.UserRepository;
 import com.resumebuilder.security.JwtService;
@@ -34,6 +38,7 @@ public class AuthService implements UserDetailsService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final OtpService otpService;
 
     @Value("${app.jwt.refresh-token-expiry-days:7}")
     private long refreshTokenExpiryDays;
@@ -49,24 +54,32 @@ public class AuthService implements UserDetailsService {
     // ── Register ─────────────────────────────────────────────────────────────
 
     @Transactional
-    public AuthResponse register(RegisterRequest request) {
-        if (userRepository.existsByEmail(request.getEmail().toLowerCase())) {
+    public RegisterResponse register(RegisterRequest request) {
+        String email = request.getEmail().toLowerCase().trim();
+
+        if (userRepository.existsByEmail(email)) {
             throw new IllegalArgumentException("An account with this email already exists");
         }
 
         User user = User.builder()
-                .email(request.getEmail().toLowerCase().trim())
+                .email(email)
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .fullName(request.getFullName().trim())
                 .provider("local")
-                .isVerified(true)  // Phase 2 will flip this to false + add OTP
+                .isVerified(false)   // Must verify email with OTP before accessing the app
                 .isActive(true)
                 .build();
 
         userRepository.save(user);
-        log.info("New user registered: {}", user.getEmail());
+        log.info("New user registered (unverified): {}", user.getEmail());
 
-        return issueTokens(user);
+        // Generate OTP and send email (async)
+        otpService.generateAndSend(user, OtpService.PURPOSE_EMAIL_VERIFY);
+
+        return RegisterResponse.builder()
+                .email(email)
+                .message("We've sent a 6-digit code to " + email + ". Enter it to activate your account.")
+                .build();
     }
 
     // ── Login ────────────────────────────────────────────────────────────────
@@ -84,8 +97,37 @@ public class AuthService implements UserDetailsService {
             throw new BadCredentialsException("Invalid email or password");
         }
 
+        // Block unverified users — prompt them to finish OTP verification
+        if (!user.isVerified()) {
+            throw new EmailNotVerifiedException(user.getEmail());
+        }
+
         log.info("User logged in: {}", user.getEmail());
         return issueTokens(user);
+    }
+
+    // ── OTP Verification ─────────────────────────────────────────────────────
+
+    @Transactional
+    public AuthResponse verifyOtp(VerifyOtpRequest request) {
+        User user = otpService.verify(
+                request.getEmail(), request.getOtp(), OtpService.PURPOSE_EMAIL_VERIFY);
+        log.info("User verified and logged in: {}", user.getEmail());
+        return issueTokens(user);
+    }
+
+    // ── Resend OTP ───────────────────────────────────────────────────────────
+
+    @Transactional
+    public void resendOtp(ResendOtpRequest request) {
+        User user = userRepository.findByEmail(request.getEmail().toLowerCase())
+                .orElseThrow(() -> new BadCredentialsException("No account found with this email"));
+
+        if (user.isVerified()) {
+            throw new IllegalArgumentException("This account is already verified");
+        }
+
+        otpService.generateAndSend(user, OtpService.PURPOSE_EMAIL_VERIFY);
     }
 
     // ── Refresh ──────────────────────────────────────────────────────────────
@@ -138,7 +180,7 @@ public class AuthService implements UserDetailsService {
 
     // ── Helpers ──────────────────────────────────────────────────────────────
 
-    private AuthResponse issueTokens(User user) {
+    AuthResponse issueTokens(User user) {
         String accessToken = jwtService.generateAccessToken(user);
         String refreshTokenValue = jwtService.generateRefreshTokenValue();
 

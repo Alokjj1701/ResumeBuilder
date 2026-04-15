@@ -5,7 +5,7 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true); // true during initial session restore
+  const [isLoading, setIsLoading] = useState(true);
   const isRestoringRef = useRef(false);
 
   // ── Session restore on app load ──────────────────────────────────────────
@@ -19,7 +19,6 @@ export function AuthProvider({ children }) {
         setUser(data.user);
       })
       .catch(() => {
-        // No valid session — user needs to log in
         clearAccessToken();
         setUser(null);
       })
@@ -36,12 +35,25 @@ export function AuthProvider({ children }) {
     return data.user;
   }, []);
 
-  // ── Register ─────────────────────────────────────────────────────────────
+  // ── Register (Phase 2: returns email, NOT tokens — OTP required next) ────
   const register = useCallback(async (fullName, email, password) => {
     const { data } = await authApi.post('/auth/register', { fullName, email, password });
+    // data = { email, message } — no tokens until OTP is verified
+    return data;
+  }, []);
+
+  // ── Verify OTP (issues tokens, logs user in) ─────────────────────────────
+  const verifyOtp = useCallback(async (email, otp) => {
+    const { data } = await authApi.post('/auth/verify-otp', { email, otp });
     setAccessToken(data.accessToken);
     setUser(data.user);
     return data.user;
+  }, []);
+
+  // ── Resend OTP ───────────────────────────────────────────────────────────
+  const resendOtp = useCallback(async (email) => {
+    const { data } = await authApi.post('/auth/resend-otp', { email });
+    return data;
   }, []);
 
   // ── Logout ───────────────────────────────────────────────────────────────
@@ -49,7 +61,7 @@ export function AuthProvider({ children }) {
     try {
       await authApi.post('/auth/logout');
     } catch {
-      // Best-effort logout — clear client state regardless
+      // Best-effort — clear client state regardless
     }
     clearAccessToken();
     setUser(null);
@@ -61,6 +73,8 @@ export function AuthProvider({ children }) {
     isAuthenticated: !!user,
     login,
     register,
+    verifyOtp,
+    resendOtp,
     logout,
   };
 

@@ -25,6 +25,12 @@ export default function LoginPage() {
       await login(form.email, form.password);
       navigate(from, { replace: true });
     } catch (err) {
+      // 403 with requiresVerification = true means the account exists but email isn't verified yet
+      if (err.response?.status === 403 && err.response?.data?.requiresVerification) {
+        const unverifiedEmail = err.response.data.email || form.email;
+        navigate('/verify-otp', { state: { email: unverifiedEmail }, replace: true });
+        return;
+      }
       setError(err.response?.data?.message || 'Invalid email or password');
     } finally {
       setLoading(false);

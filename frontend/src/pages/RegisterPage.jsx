@@ -29,7 +29,8 @@ export default function RegisterPage() {
     setError('');
     try {
       await register(form.fullName, form.email, form.password);
-      navigate('/', { replace: true });
+      // Backend returns { email, message } — redirect to OTP verification
+      navigate('/verify-otp', { state: { email: form.email.toLowerCase().trim() }, replace: true });
     } catch (err) {
       setError(err.response?.data?.message || 'Something went wrong. Please try again.');
     } finally {

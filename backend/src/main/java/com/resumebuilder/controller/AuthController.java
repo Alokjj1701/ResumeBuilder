@@ -3,6 +3,9 @@ package com.resumebuilder.controller;
 import com.resumebuilder.dto.auth.AuthResponse;
 import com.resumebuilder.dto.auth.LoginRequest;
 import com.resumebuilder.dto.auth.RegisterRequest;
+import com.resumebuilder.dto.auth.RegisterResponse;
+import com.resumebuilder.dto.auth.ResendOtpRequest;
+import com.resumebuilder.dto.auth.VerifyOtpRequest;
 import com.resumebuilder.entity.User;
 import com.resumebuilder.service.AuthService;
 import jakarta.servlet.http.Cookie;
@@ -34,13 +37,10 @@ public class AuthController {
     // ── Register ─────────────────────────────────────────────────────────────
 
     @PostMapping("/register")
-    public ResponseEntity<AuthResponse> register(
-            @Valid @RequestBody RegisterRequest request,
-            HttpServletResponse response) {
-
-        AuthResponse authResponse = authService.register(request);
-        setRefreshCookie(response, authResponse.getRefreshTokenValue());
-        return ResponseEntity.ok(authResponse);
+    public ResponseEntity<RegisterResponse> register(@Valid @RequestBody RegisterRequest request) {
+        RegisterResponse response = authService.register(request);
+        return ResponseEntity.ok(response);
+        // No tokens — user must verify OTP first
     }
 
     // ── Login ────────────────────────────────────────────────────────────────
@@ -53,6 +53,26 @@ public class AuthController {
         AuthResponse authResponse = authService.login(request);
         setRefreshCookie(response, authResponse.getRefreshTokenValue());
         return ResponseEntity.ok(authResponse);
+    }
+
+    // ── OTP Verification ─────────────────────────────────────────────────────
+
+    @PostMapping("/verify-otp")
+    public ResponseEntity<AuthResponse> verifyOtp(
+            @Valid @RequestBody VerifyOtpRequest request,
+            HttpServletResponse response) {
+
+        AuthResponse authResponse = authService.verifyOtp(request);
+        setRefreshCookie(response, authResponse.getRefreshTokenValue());
+        return ResponseEntity.ok(authResponse);
+    }
+
+    // ── Resend OTP ───────────────────────────────────────────────────────────
+
+    @PostMapping("/resend-otp")
+    public ResponseEntity<Map<String, String>> resendOtp(@Valid @RequestBody ResendOtpRequest request) {
+        authService.resendOtp(request);
+        return ResponseEntity.ok(Map.of("message", "A new verification code has been sent to " + request.getEmail()));
     }
 
     // ── Refresh ──────────────────────────────────────────────────────────────
@@ -101,7 +121,7 @@ public class AuthController {
         Cookie cookie = new Cookie("refreshToken", tokenValue);
         cookie.setHttpOnly(true);
         cookie.setSecure(secureCookie);
-        cookie.setPath("/auth/refresh");  // Cookie sent only to refresh endpoint
+        cookie.setPath("/auth/refresh");
         cookie.setMaxAge(refreshTokenExpiryDays * 24 * 60 * 60);
         response.addCookie(cookie);
     }

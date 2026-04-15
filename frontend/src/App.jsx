@@ -6,6 +6,7 @@ import HomePage from './pages/HomePage';
 import BuilderPage from './pages/BuilderPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import VerifyOtpPage from './pages/VerifyOtpPage';
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
           {/* Public auth routes */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/verify-otp" element={<VerifyOtpPage />} />
 
           {/* Protected routes */}
           <Route path="/" element={
