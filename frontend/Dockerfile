@@ -20,11 +20,14 @@ RUN npm run build
 # ── Stage 2: Serve with Nginx ────────────────────────────────
 FROM nginx:1.25-alpine
 
+# envsubst (from gettext) is used to inject BACKEND_URL into nginx.conf at startup
+RUN apk add --no-cache gettext
+
 # Remove default nginx config
 RUN rm -rf /etc/nginx/conf.d/default.conf
 
-# Copy custom nginx config
-COPY nginx.conf /etc/nginx/nginx.conf
+# Copy custom nginx config as a template (BACKEND_URL is injected at startup)
+COPY nginx.conf /etc/nginx/nginx.conf.template
 
 # Copy built assets
 COPY --from=builder /app/dist /usr/share/nginx/html
@@ -34,4 +37,5 @@ EXPOSE 80
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD wget -qO- http://localhost/health || exit 1
 
-CMD ["nginx", "-g", "daemon off;"]
+# Substitute ${BACKEND_URL} only (leave nginx $variables untouched), then start
+CMD ["/bin/sh", "-c", "envsubst '${BACKEND_URL}' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf && nginx -g 'daemon off;'"]
