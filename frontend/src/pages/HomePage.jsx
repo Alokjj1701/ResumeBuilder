@@ -2,32 +2,33 @@ import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useResume } from '../hooks/useResume';
+import { useAuth } from '../context/AuthContext';
 import HeroSection from '../components/Home/HeroSection';
 import WhyResumeMatters from '../components/Home/WhyResumeMatters';
 import FeaturesSection from '../components/Home/FeaturesSection';
 import Testimonials from '../components/Home/Testimonials';
-import TemplatesGrid from '../components/Home/TemplatesGrid';
+import TemplatesGrid, { LiveMiniPreview, TEMPLATE_COMPONENT_MAP, SAMPLE_RESUME } from '../components/Home/TemplatesGrid';
 import CtaSection from '../components/Home/CtaSection';
 
 // Template metadata (used by ResumeCard + TemplatePickerModal)
 const ALL_TEMPLATES = [
-  { id: 'modern',     name: 'Modern',     category: 'Professional', color: '#2563eb', gradient: 'linear-gradient(135deg,#2563eb,#60a5fa)', features: ['Two-column layout','Blue accent','Skills sidebar'] },
-  { id: 'minimal',    name: 'Minimal',    category: 'Simple',       color: '#374151', gradient: 'linear-gradient(135deg,#374151,#9ca3af)', features: ['Single column','Black & white','ATS-friendly'] },
-  { id: 'corporate',  name: 'Corporate',  category: 'Traditional',  color: '#1e3a5f', gradient: 'linear-gradient(135deg,#1e3a5f,#2d6a9f)', features: ['Dark header','Border accents','Conservative'] },
-  { id: 'creative',   name: 'Creative',   category: 'Creative',     color: '#7c3aed', gradient: 'linear-gradient(135deg,#7c3aed,#ec4899)', features: ['Gradient header','Colorful tags','Bold type'] },
-  { id: 'tech',       name: 'Tech',       category: 'Technical',    color: '#0f172a', gradient: 'linear-gradient(135deg,#0f172a,#1e40af)', features: ['GitHub links','Tech tags','Projects first'] },
-  { id: 'gradient',   name: 'Gradient',   category: 'Creative',     color: '#4f46e5', gradient: 'linear-gradient(135deg,#4f46e5,#7c3aed,#ec4899)', features: ['Indigo→pink gradient','Pill tags','Gen Z style'] },
-  { id: 'sidebar',    name: 'Sidebar',    category: 'Professional', color: '#0f172a', gradient: 'linear-gradient(135deg,#0f172a,#38bdf8)', features: ['Dark sidebar','Avatar initials','Sky accents'] },
-  { id: 'two-column', name: 'Two Column', category: 'Structured',   color: '#374151', gradient: 'linear-gradient(135deg,#374151,#6b7280)', features: ['Equal columns','Contact sidebar','Compact'] },
-  { id: 'executive',  name: 'Executive',  category: 'Professional', color: '#c9a84c', gradient: 'linear-gradient(135deg,#0c1b33,#c9a84c)', features: ['Serif typography','Gold accents','Premium feel'] },
-  { id: 'emerald',   name: 'Emerald',   category: 'Creative',     color: '#047857', gradient: 'linear-gradient(135deg,#065f46,#047857,#059669)', features: ['Teal sidebar','Avatar circle','Canva-style'] },
-  { id: 'coral',     name: 'Coral',     category: 'Creative',     color: '#ea580c', gradient: 'linear-gradient(135deg,#c2410c,#ea580c,#f97316)', features: ['Coral header','Avatar initials','Warm palette'] },
-  { id: 'noir',      name: 'Noir',      category: 'Professional', color: '#1e293b', gradient: 'linear-gradient(135deg,#0f172a,#e11d48)', features: ['Dark slate header','Rose accents','Dramatic'] },
-  { id: 'prisma',    name: 'Prisma',    category: 'Creative',     color: '#7c3aed', gradient: 'linear-gradient(160deg,#5b21b6,#7c3aed,#8b5cf6)', features: ['Violet sidebar','Large avatar','Bold layout'] },
-  { id: 'classic',   name: 'Classic',   category: 'Professional', color: '#374151', gradient: 'linear-gradient(135deg,#374151,#6b7280)', features: ['Profile photo','Date-column','Serif type'] },
-  { id: 'sage',      name: 'Sage',      category: 'Creative',     color: '#4a5c4d', gradient: 'linear-gradient(135deg,#4a5c4d,#6b7c6e)', features: ['Photo sidebar','Display name','Footer bar'] },
-  { id: 'chronicle', name: 'Chronicle', category: 'Professional', color: '#1e2a45', gradient: 'linear-gradient(135deg,#121c30,#1e2a45)', features: ['Circular photo','Navy header','Timeline'] },
-  { id: 'slate',     name: 'Slate',     category: 'Simple',       color: '#374151', gradient: 'linear-gradient(135deg,#374151,#9ca3af)', features: ['Section bands','3-col skills','ATS-ready'] },
+  { id: 'modern',     name: 'Modern',     category: 'Professional', color: '#2563eb' },
+  { id: 'minimal',    name: 'Minimal',    category: 'Simple',       color: '#374151' },
+  { id: 'corporate',  name: 'Corporate',  category: 'Traditional',  color: '#1e3a5f' },
+  { id: 'creative',   name: 'Creative',   category: 'Creative',     color: '#7c3aed' },
+  { id: 'tech',       name: 'Tech',       category: 'Technical',    color: '#0f172a' },
+  { id: 'gradient',   name: 'Gradient',   category: 'Creative',     color: '#4f46e5' },
+  { id: 'sidebar',    name: 'Sidebar',    category: 'Professional', color: '#0f172a' },
+  { id: 'two-column', name: 'Two Column', category: 'Structured',   color: '#374151' },
+  { id: 'executive',  name: 'Executive',  category: 'Professional', color: '#c9a84c' },
+  { id: 'emerald',    name: 'Emerald',    category: 'Creative',     color: '#047857' },
+  { id: 'coral',      name: 'Coral',      category: 'Creative',     color: '#ea580c' },
+  { id: 'noir',       name: 'Noir',       category: 'Professional', color: '#1e293b' },
+  { id: 'prisma',     name: 'Prisma',     category: 'Creative',     color: '#7c3aed' },
+  { id: 'classic',    name: 'Classic',    category: 'Professional', color: '#374151' },
+  { id: 'sage',       name: 'Sage',       category: 'Creative',     color: '#4a5c4d' },
+  { id: 'chronicle',  name: 'Chronicle',  category: 'Professional', color: '#1e2a45' },
+  { id: 'slate',      name: 'Slate',      category: 'Simple',       color: '#374151' },
 ];
 
 function formatDate(dateStr) {
@@ -37,7 +38,7 @@ function formatDate(dateStr) {
   } catch { return dateStr; }
 }
 
-/* ─── Resume Card (for "Your Resumes" grid) ─────────────────────────── */
+/* ─── Resume Card ────────────────────────────────────────────────────── */
 function ResumeCard({ resume, onEdit, onDelete }) {
   const [deleting, setDeleting] = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -49,6 +50,10 @@ function ResumeCard({ resume, onEdit, onDelete }) {
     setDeleting(true);
     try { await onDelete(resume.id); } catch { setDeleting(false); }
   };
+
+  const previewResume = resume.sections
+    ? { sections: resume.sections, templateId: tmpl.id }
+    : { ...SAMPLE_RESUME, templateId: tmpl.id };
 
   return (
     <div
@@ -64,23 +69,18 @@ function ResumeCard({ resume, onEdit, onDelete }) {
         transition: 'all 0.22s cubic-bezier(0.22,1,0.36,1)',
       }}
     >
-      {/* Gradient banner */}
-      <div style={{ height: '80px', background: tmpl.gradient, position: 'relative', overflow: 'hidden' }}>
-        <div style={{ padding: '14px 16px' }}>
-          <div style={{ height: '5px', background: 'rgba(255,255,255,0.6)', borderRadius: '3px', width: '50%', marginBottom: '5px' }} />
-          <div style={{ height: '2px', background: 'rgba(255,255,255,0.3)', borderRadius: '1px', width: '35%', marginBottom: '8px' }} />
-          <div style={{ display: 'flex', gap: '4px' }}>
-            {[60, 75, 55].map((w, i) => (
-              <div key={i} style={{ height: '2px', background: 'rgba(255,255,255,0.2)', borderRadius: '1px', width: `${w}%` }} />
-            ))}
-          </div>
-        </div>
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(255,255,255,0.08) 0%, transparent 60%)' }} />
+      {/* Live template preview banner */}
+      <div style={{ position: 'relative', borderBottom: '1px solid var(--border)' }}>
+        <LiveMiniPreview
+          tmpl={tmpl}
+          resume={previewResume}
+          height={110}
+        />
         <div style={{
           position: 'absolute', top: '8px', right: '8px',
-          padding: '2px 8px', background: 'rgba(0,0,0,0.3)',
+          padding: '2px 8px', background: 'rgba(0,0,0,0.45)',
           backdropFilter: 'blur(4px)', borderRadius: '100px',
-          fontSize: '0.65rem', color: 'rgba(255,255,255,0.9)', fontWeight: 600,
+          fontSize: '0.65rem', color: 'rgba(255,255,255,0.95)', fontWeight: 600,
         }}>
           {tmpl.name}
         </div>
@@ -148,7 +148,7 @@ function TemplatePickerModal({ templates, onSelect, onClose }) {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" style={{ maxWidth: '800px' }} onClick={(e) => e.stopPropagation()}>
+      <div className="modal" style={{ maxWidth: '860px' }} onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div>
             <h2 className="modal-title">Choose a Template</h2>
@@ -184,10 +184,9 @@ function TemplatePickerModal({ templates, onSelect, onClose }) {
         </div>
 
         <div className="modal-body">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '0.875rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.875rem' }}>
             {filtered.map((tmpl) => {
               const color = tmpl.color || '#2563eb';
-              const gradient = tmpl.gradient || `linear-gradient(135deg, ${color}, ${color}88)`;
               const isSelected = selected === tmpl.id;
               return (
                 <div
@@ -203,20 +202,15 @@ function TemplatePickerModal({ templates, onSelect, onClose }) {
                   onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.borderColor = color; }}
                   onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.borderColor = 'var(--border)'; }}
                 >
-                  <div style={{ height: '76px', background: gradient, position: 'relative', overflow: 'hidden' }}>
-                    <div style={{ padding: '8px 10px' }}>
-                      <div style={{ height: '5px', background: 'rgba(255,255,255,0.7)', borderRadius: '3px', width: '60%', marginBottom: '4px' }} />
-                      <div style={{ height: '2px', background: 'rgba(255,255,255,0.4)', borderRadius: '1px', width: '40%', marginBottom: '5px' }} />
-                      {[80, 70, 60].map((w, i) => (
-                        <div key={i} style={{ height: '2px', background: 'rgba(255,255,255,0.22)', borderRadius: '1px', width: `${w}%`, marginBottom: '2px' }} />
-                      ))}
-                    </div>
-                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(255,255,255,0.08) 0%, transparent 60%)' }} />
+                  {/* Live mini preview */}
+                  <div style={{ position: 'relative' }}>
+                    <LiveMiniPreview tmpl={tmpl} height={120} />
                     {isSelected && (
                       <div style={{
                         position: 'absolute', top: '6px', right: '6px',
                         width: '20px', height: '20px', background: '#fff', borderRadius: '50%',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
                       }}>
                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="3">
                           <polyline points="20 6 9 17 4 12" />
@@ -225,21 +219,16 @@ function TemplatePickerModal({ templates, onSelect, onClose }) {
                     )}
                   </div>
                   <div style={{
-                    padding: '0.625rem 0.75rem',
+                    padding: '0.5rem 0.75rem',
                     background: isSelected ? `${color}08` : 'var(--white)',
                     borderTop: `1px solid ${isSelected ? color : 'var(--border)'}`,
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <span style={{ fontWeight: 700, fontSize: '0.8125rem', color: 'var(--text)' }}>{tmpl.name}</span>
                       <span style={{ padding: '1px 6px', borderRadius: '100px', fontSize: '0.65rem', fontWeight: 500, background: `${color}18`, color }}>
                         {tmpl.category}
                       </span>
                     </div>
-                    {(tmpl.features || []).slice(0, 2).map((f, i) => (
-                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', color: 'var(--text-light)' }}>
-                        <span style={{ color, fontSize: '0.55rem' }}>▸</span>{f}
-                      </div>
-                    ))}
                   </div>
                 </div>
               );
@@ -265,9 +254,96 @@ function TemplatePickerModal({ templates, onSelect, onClose }) {
   );
 }
 
+/* ─── User Menu ──────────────────────────────────────────────────────── */
+function UserMenu({ user, onLogout }) {
+  const [open, setOpen] = useState(false);
+  const initials = user?.fullName
+    ? user.fullName.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
+    : user?.email?.[0]?.toUpperCase() || '?';
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        style={{
+          display: 'flex', alignItems: 'center', gap: '0.5rem',
+          background: 'none', border: '1.5px solid var(--border)',
+          borderRadius: '100px', padding: '0.3rem 0.75rem 0.3rem 0.3rem',
+          cursor: 'pointer', transition: 'border-color 0.15s',
+        }}
+        onMouseEnter={(e) => e.currentTarget.style.borderColor = '#4f46e5'}
+        onMouseLeave={(e) => { if (!open) e.currentTarget.style.borderColor = 'var(--border)'; }}
+      >
+        {/* Avatar */}
+        <div style={{
+          width: '28px', height: '28px', borderRadius: '50%',
+          background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
+          color: '#fff', fontSize: '0.7rem', fontWeight: 700,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flexShrink: 0,
+        }}>
+          {initials}
+        </div>
+        <span style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--text)', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {user?.fullName || user?.email}
+        </span>
+        <svg
+          width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text-light)" strokeWidth="2"
+          style={{ transform: open ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.15s' }}
+        >
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+
+      {open && (
+        <>
+          {/* Backdrop */}
+          <div style={{ position: 'fixed', inset: 0, zIndex: 299 }} onClick={() => setOpen(false)} />
+          {/* Dropdown */}
+          <div style={{
+            position: 'absolute', top: 'calc(100% + 8px)', right: 0,
+            background: 'var(--white)', border: '1px solid var(--border)',
+            borderRadius: '14px', boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+            minWidth: '200px', zIndex: 300, overflow: 'hidden',
+          }}>
+            <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--border)' }}>
+              <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text)', marginBottom: '0.15rem' }}>
+                {user?.fullName || 'User'}
+              </div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-light)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {user?.email}
+              </div>
+            </div>
+            <button
+              onClick={() => { setOpen(false); onLogout(); }}
+              style={{
+                width: '100%', padding: '0.7rem 1rem',
+                display: 'flex', alignItems: 'center', gap: '0.625rem',
+                background: 'none', border: 'none', cursor: 'pointer',
+                fontSize: '0.8125rem', fontWeight: 500, color: '#dc2626',
+                textAlign: 'left',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#fef2f2'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+              Sign out
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 /* ─── Main Page ──────────────────────────────────────────────────────── */
 export default function HomePage() {
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const { state, loadResumes, loadTemplates, createNewResume, deleteResume } = useResume();
   const [showTemplateModal, setShowTemplateModal] = useState(false);
 
@@ -276,6 +352,11 @@ export default function HomePage() {
     loadTemplates();
   }, [loadResumes, loadTemplates]);
 
+  const handleLogout = useCallback(async () => {
+    await logout();
+    navigate('/login', { replace: true });
+  }, [logout, navigate]);
+
   const handleNew = useCallback(() => setShowTemplateModal(true), []);
 
   const handleTemplateSelected = useCallback((templateId) => {
@@ -283,7 +364,6 @@ export default function HomePage() {
     navigate('/builder');
   }, [createNewResume, navigate]);
 
-  // Also used by TemplatesGrid "Use Template" buttons
   const handleSelectTemplate = useCallback((templateId) => {
     createNewResume(templateId);
     navigate('/builder');
@@ -296,7 +376,9 @@ export default function HomePage() {
   }, []);
 
   const templates = state.templates.length > 0
-    ? state.templates.map((t) => ({ ...ALL_TEMPLATES.find((at) => at.id === t.id) || {}, ...t }))
+    ? state.templates
+        .filter((t) => ALL_TEMPLATES.some((at) => at.id === t.id))   // drop DB-only templates with no component
+        .map((t) => ({ ...ALL_TEMPLATES.find((at) => at.id === t.id), ...t }))
     : ALL_TEMPLATES;
 
   return (
@@ -339,8 +421,8 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Nav links + CTA */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+        {/* Nav links + user */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
           <button
             onClick={handleViewTemplates}
             style={{ background: 'none', border: 'none', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-light)', cursor: 'pointer' }}
@@ -378,6 +460,7 @@ export default function HomePage() {
             </svg>
             New Resume
           </button>
+          <UserMenu user={user} onLogout={handleLogout} />
         </div>
       </nav>
 

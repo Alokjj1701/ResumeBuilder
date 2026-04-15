@@ -7,7 +7,7 @@ const fadeUp = (delay = 0) => ({
 });
 
 const STATS = [
-  { value: '9',    label: 'Templates' },
+  { value: '17',   label: 'Templates' },
   { value: 'ATS',  label: 'Optimized' },
   { value: 'Live', label: 'Preview' },
   { value: '1-Click', label: 'PDF Export' },

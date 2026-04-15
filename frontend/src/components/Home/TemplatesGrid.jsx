@@ -58,7 +58,9 @@ const SAMPLE_RESUME = {
 
 const A4_WIDTH = 794;
 
-function LiveMiniPreview({ tmpl }) {
+export { TEMPLATE_COMPONENT_MAP, SAMPLE_RESUME };
+
+export function LiveMiniPreview({ tmpl, resume, height = 195 }) {
   const containerRef = useRef(null);
   const [scale, setScale] = useState(0.42);
 
@@ -69,12 +71,29 @@ function LiveMiniPreview({ tmpl }) {
   }, []);
 
   const TemplateComp = TEMPLATE_COMPONENT_MAP[tmpl.id];
-  if (!TemplateComp) return null;
+
+  if (!TemplateComp) {
+    // No component built for this template yet — show a branded placeholder
+    return (
+      <div style={{
+        width: '100%', height: `${height}px`,
+        background: `linear-gradient(135deg, ${tmpl.color || '#6b7280'}22, ${tmpl.color || '#6b7280'}08)`,
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        gap: '6px', color: tmpl.color || '#6b7280',
+      }}>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+        </svg>
+        <span style={{ fontSize: '0.7rem', fontWeight: 600, opacity: 0.7 }}>Preview unavailable</span>
+      </div>
+    );
+  }
 
   return (
     <div
       ref={containerRef}
-      style={{ width: '100%', height: '195px', overflow: 'hidden', position: 'relative', background: '#fff' }}
+      style={{ width: '100%', height: `${height}px`, overflow: 'hidden', position: 'relative', background: '#fff' }}
     >
       <div style={{
         width: `${A4_WIDTH}px`,
@@ -83,7 +102,7 @@ function LiveMiniPreview({ tmpl }) {
         pointerEvents: 'none',
         userSelect: 'none',
       }}>
-        <TemplateComp resume={{ ...SAMPLE_RESUME, templateId: tmpl.id }} />
+        <TemplateComp resume={resume || { ...SAMPLE_RESUME, templateId: tmpl.id }} />
       </div>
     </div>
   );

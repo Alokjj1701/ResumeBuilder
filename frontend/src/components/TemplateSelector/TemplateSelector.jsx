@@ -69,7 +69,23 @@ function LiveMiniPreview({ tmpl }) {
   }, []);
 
   const TemplateComp = TEMPLATE_COMPONENT_MAP[tmpl.id];
-  if (!TemplateComp) return null;
+
+  if (!TemplateComp) {
+    return (
+      <div style={{
+        width: '100%', height: '140px',
+        background: `linear-gradient(135deg, ${tmpl.color || '#6b7280'}22, ${tmpl.color || '#6b7280'}08)`,
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        gap: '6px', color: tmpl.color || '#6b7280',
+      }}>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+        </svg>
+        <span style={{ fontSize: '0.7rem', fontWeight: 600, opacity: 0.7 }}>Preview unavailable</span>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -201,11 +217,11 @@ export default function TemplateSelector({ onSelect, selectedId, onClose }) {
   const { state } = useResume();
   const [filter, setFilter] = useState('All');
 
-  // Merge backend templates with our local metadata (color/gradient/features)
+  // Merge backend templates with local metadata; drop any DB entries without a built component
   const templates = ALL_TEMPLATES.map((local) => {
     const fromServer = (state.templates || []).find((t) => t.id === local.id);
     return fromServer ? { ...local, ...fromServer, gradient: local.gradient, color: local.color, features: local.features } : local;
-  });
+  }).filter((t) => TEMPLATE_COMPONENT_MAP[t.id]);
 
   const visibleCategories = CATEGORIES.filter(
     (cat) => cat === 'All' || templates.some((t) => t.category === cat)
