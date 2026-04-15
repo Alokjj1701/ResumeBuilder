@@ -9,12 +9,24 @@ CREATE TABLE IF NOT EXISTS templates (
 
 CREATE TABLE IF NOT EXISTS resumes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     title VARCHAR(255) NOT NULL,
     template_id VARCHAR(50) NOT NULL,
     sections_data TEXT NOT NULL DEFAULT '{}',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Migration: add user_id column if table already exists without it
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name='resumes' AND column_name='user_id'
+    ) THEN
+        ALTER TABLE resumes ADD COLUMN user_id UUID REFERENCES users(id) ON DELETE CASCADE;
+    END IF;
+END$$;
 
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

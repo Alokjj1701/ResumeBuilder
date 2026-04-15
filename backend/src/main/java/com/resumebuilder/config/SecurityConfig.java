@@ -17,6 +17,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.web.cors.CorsConfigurationSource;
 
 @Configuration
@@ -36,6 +37,22 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource))
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .headers(headers -> headers
+                // Enforce HTTPS for 1 year; include subdomains
+                .httpStrictTransportSecurity(hsts -> hsts
+                    .maxAgeInSeconds(31536000)
+                    .includeSubDomains(true))
+                // Prevent clickjacking
+                .frameOptions(frame -> frame.deny())
+                // Prevent MIME-type sniffing
+                .contentTypeOptions(cto -> {})
+                // Restrict what info is sent in the Referer header
+                .referrerPolicy(referrer -> referrer
+                    .policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
+                // Disable browser features the API doesn't need
+                .permissionsPolicy(permissions -> permissions
+                    .policy("camera=(), microphone=(), geolocation=(), payment=(), usb=()"))
+            )
             .authorizeHttpRequests(auth -> auth
                 // Auth endpoints are public
                 .requestMatchers("/auth/**").permitAll()

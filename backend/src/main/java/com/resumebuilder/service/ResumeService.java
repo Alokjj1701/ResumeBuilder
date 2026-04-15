@@ -7,6 +7,7 @@ import com.resumebuilder.dto.ResumeDto;
 import com.resumebuilder.dto.ResumeSectionsDto;
 import com.resumebuilder.dto.UpdateResumeRequest;
 import com.resumebuilder.entity.Resume;
+import com.resumebuilder.entity.User;
 import com.resumebuilder.exception.ResourceNotFoundException;
 import com.resumebuilder.repository.ResumeRepository;
 import com.resumebuilder.repository.TemplateRepository;
@@ -30,42 +31,40 @@ public class ResumeService {
     private final TemplateRepository templateRepository;
     private final ObjectMapper objectMapper;
 
-    public ResumeDto createResume(CreateResumeRequest request) {
-        // Validate that the templateId exists
+    public ResumeDto createResume(CreateResumeRequest request, User user) {
         templateRepository.findById(request.getTemplateId())
                 .orElseThrow(() -> new ResourceNotFoundException("Template", "id", request.getTemplateId()));
 
-        ResumeSectionsDto sections = request.getSections();
-
-        String sectionsJson = serializeSections(sections);
+        String sectionsJson = serializeSections(request.getSections());
 
         Resume resume = Resume.builder()
+                .user(user)
                 .title(request.getTitle())
                 .templateId(request.getTemplateId())
                 .sectionsData(sectionsJson)
                 .build();
 
         Resume saved = resumeRepository.save(resume);
-        log.info("Created resume with id={}", saved.getId());
+        log.info("Created resume id={} for user={}", saved.getId(), user.getEmail());
         return toDto(saved);
     }
 
     @Transactional(readOnly = true)
-    public ResumeDto getResumeById(UUID id) {
-        Resume resume = resumeRepository.findById(id)
+    public ResumeDto getResumeById(UUID id, User user) {
+        Resume resume = resumeRepository.findByIdAndUser(id, user)
                 .orElseThrow(() -> new ResourceNotFoundException("Resume", "id", id));
         return toDto(resume);
     }
 
     @Transactional(readOnly = true)
-    public List<ResumeDto> getAllResumes() {
-        return resumeRepository.findAllByOrderByUpdatedAtDesc().stream()
+    public List<ResumeDto> getAllResumes(User user) {
+        return resumeRepository.findByUserOrderByUpdatedAtDesc(user).stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
     }
 
-    public ResumeDto updateResume(UUID id, UpdateResumeRequest request) {
-        Resume resume = resumeRepository.findById(id)
+    public ResumeDto updateResume(UUID id, UpdateResumeRequest request, User user) {
+        Resume resume = resumeRepository.findByIdAndUser(id, user)
                 .orElseThrow(() -> new ResourceNotFoundException("Resume", "id", id));
 
         if (request.getTitle() != null && !request.getTitle().isBlank()) {
@@ -73,7 +72,6 @@ public class ResumeService {
         }
 
         if (request.getTemplateId() != null && !request.getTemplateId().isBlank()) {
-            // Validate new templateId exists
             templateRepository.findById(request.getTemplateId())
                     .orElseThrow(() -> new ResourceNotFoundException("Template", "id", request.getTemplateId()));
             resume.setTemplateId(request.getTemplateId());
@@ -84,15 +82,15 @@ public class ResumeService {
         }
 
         Resume saved = resumeRepository.save(resume);
-        log.info("Updated resume with id={}", saved.getId());
+        log.info("Updated resume id={} for user={}", saved.getId(), user.getEmail());
         return toDto(saved);
     }
 
-    public void deleteResume(UUID id) {
-        Resume resume = resumeRepository.findById(id)
+    public void deleteResume(UUID id, User user) {
+        Resume resume = resumeRepository.findByIdAndUser(id, user)
                 .orElseThrow(() -> new ResourceNotFoundException("Resume", "id", id));
         resumeRepository.delete(resume);
-        log.info("Deleted resume with id={}", id);
+        log.info("Deleted resume id={} for user={}", id, user.getEmail());
     }
 
     // --- Private helpers ---

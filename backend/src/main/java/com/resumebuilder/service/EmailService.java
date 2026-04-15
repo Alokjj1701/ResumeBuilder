@@ -5,7 +5,6 @@ import com.resend.core.exception.ResendException;
 import com.resend.services.emails.model.CreateEmailOptions;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -25,7 +24,6 @@ public class EmailService {
         this.fromName = fromName;
     }
 
-    @Async
     public void sendOtpEmail(String toEmail, String otp, String userName) {
         try {
             CreateEmailOptions params = CreateEmailOptions.builder()

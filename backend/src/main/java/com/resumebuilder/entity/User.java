@@ -42,7 +42,7 @@ public class User implements UserDetails {
 
     @Column(name = "is_verified", nullable = false)
     @Builder.Default
-    private boolean isVerified = true;
+    private boolean isVerified = false;
 
     @Column(name = "is_active", nullable = false)
     @Builder.Default
