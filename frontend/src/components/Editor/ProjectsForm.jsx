@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { v4 as uuidv4 } from 'uuid';
+import AiRewriteButton from '../AI/AiRewriteButton';
 
 function DragHandle() {
   return (
@@ -105,7 +106,7 @@ function ProjectItem({ item, onChange, onDelete }) {
       borderRadius: 'var(--radius)',
       marginBottom: '0.75rem',
       background: 'var(--white)',
-      overflow: 'hidden',
+      // No overflow:hidden — it clips the AI rewrite dropdown
     }}>
       <div style={{
         display: 'flex',
@@ -193,7 +194,14 @@ function ProjectItem({ item, onChange, onDelete }) {
           </div>
 
           <div className="form-group" style={{ marginBottom: '0.75rem' }}>
-            <label className="form-label">Description</label>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+              <label className="form-label" style={{ marginBottom: 0 }}>Description</label>
+              <AiRewriteButton
+                content={item.description}
+                sectionType="projects"
+                onAccept={(rewritten) => handleField('description', rewritten)}
+              />
+            </div>
             <textarea
               className="form-textarea"
               value={item.description || ''}

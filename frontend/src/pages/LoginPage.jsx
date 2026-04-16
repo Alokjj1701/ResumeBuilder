@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+
 import { useAuth } from '../context/AuthContext';
 
 export default function LoginPage() {
@@ -71,7 +72,12 @@ export default function LoginPage() {
           </div>
 
           <div style={styles.field}>
-            <label style={styles.label} htmlFor="password">Password</label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <label style={styles.label} htmlFor="password">Password</label>
+              <Link to="/forgot-password" style={{ fontSize: '13px', color: '#4f46e5', fontWeight: 500, textDecoration: 'none' }}>
+                Forgot password?
+              </Link>
+            </div>
             <input
               id="password"
               name="password"

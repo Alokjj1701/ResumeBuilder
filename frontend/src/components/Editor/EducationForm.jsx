@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { v4 as uuidv4 } from 'uuid';
+import AiRewriteButton from '../AI/AiRewriteButton';
 
 function DragHandle() {
   return (
@@ -199,7 +200,14 @@ function EducationItem({ item, onChange, onDelete }) {
           </div>
 
           <div className="form-group" style={{ marginBottom: 0 }}>
-            <label className="form-label">Additional Details</label>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+              <label className="form-label" style={{ marginBottom: 0 }}>Additional Details</label>
+              <AiRewriteButton
+                content={item.description}
+                sectionType="education"
+                onAccept={(rewritten) => handleField('description', rewritten)}
+              />
+            </div>
             <textarea
               className="form-textarea"
               value={item.description || ''}

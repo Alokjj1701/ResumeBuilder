@@ -213,6 +213,8 @@ export default function ResumeEditor() {
               <SummaryForm
                 value={sections.summary || ''}
                 onChange={(value) => handleSectionUpdate('summary', value)}
+                experience={sections.experience || []}
+                skills={sections.skills || []}
               />
             )}
           </div>

@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { useResume } from '../hooks/useResume';
 import { useAuth } from '../context/AuthContext';
 import HeroSection from '../components/Home/HeroSection';
+import AiBuilderModal from '../components/AI/AiBuilderModal';
 import WhyResumeMatters from '../components/Home/WhyResumeMatters';
 import FeaturesSection from '../components/Home/FeaturesSection';
 import Testimonials from '../components/Home/Testimonials';
@@ -344,8 +345,9 @@ function UserMenu({ user, onLogout }) {
 export default function HomePage() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const { state, loadResumes, loadTemplates, createNewResume, deleteResume } = useResume();
+  const { state, loadResumes, loadTemplates, createNewResume, createResumeFromSections, deleteResume } = useResume();
   const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [showAiBuilder, setShowAiBuilder]         = useState(false);
 
   useEffect(() => {
     loadResumes();
@@ -358,6 +360,13 @@ export default function HomePage() {
   }, [logout, navigate]);
 
   const handleNew = useCallback(() => setShowTemplateModal(true), []);
+  const handleAiBuilder = useCallback(() => setShowAiBuilder(true), []);
+
+  const handleAiComplete = useCallback((sections, title) => {
+    createResumeFromSections(sections, title, 'modern');
+    setShowAiBuilder(false);
+    navigate('/builder');
+  }, [createResumeFromSections, navigate]);
 
   const handleTemplateSelected = useCallback((templateId) => {
     createNewResume(templateId);
@@ -465,7 +474,7 @@ export default function HomePage() {
       </nav>
 
       {/* ── Hero ── */}
-      <HeroSection onCreateResume={handleNew} onViewTemplates={handleViewTemplates} />
+      <HeroSection onCreateResume={handleNew} onViewTemplates={handleViewTemplates} onAiBuilder={handleAiBuilder} />
 
       {/* ── Why Resume Matters ── */}
       <WhyResumeMatters />
@@ -478,6 +487,18 @@ export default function HomePage() {
 
       {/* ── Testimonials ── */}
       <Testimonials />
+
+      {/* ── Load error (shown even when resume list is empty) ── */}
+      {!state.loading && state.error && (
+        <div style={{ maxWidth: '1160px', margin: '0 auto', padding: '1.5rem 2rem 0' }}>
+          <div className="alert alert-error">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            {state.error}
+          </div>
+        </div>
+      )}
 
       {/* ── Your Resumes (existing) ── */}
       {!state.loading && state.resumes.length > 0 && (
@@ -493,16 +514,6 @@ export default function HomePage() {
               transition={{ duration: 0.5 }}
               viewport={{ once: true, margin: '-60px' }}
             >
-              {/* Error */}
-              {state.error && (
-                <div className="alert alert-error" style={{ marginBottom: '1.25rem' }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
-                  </svg>
-                  {state.error}
-                </div>
-              )}
-
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
                 <div>
                   <h2 style={{ fontSize: '1.375rem', fontWeight: 900, color: 'var(--text)', letterSpacing: '-0.4px' }}>
@@ -568,6 +579,14 @@ export default function HomePage() {
           templates={templates}
           onSelect={handleTemplateSelected}
           onClose={() => setShowTemplateModal(false)}
+        />
+      )}
+
+      {/* ── AI Resume Builder Modal ── */}
+      {showAiBuilder && (
+        <AiBuilderModal
+          onClose={() => setShowAiBuilder(false)}
+          onComplete={handleAiComplete}
         />
       )}
     </div>

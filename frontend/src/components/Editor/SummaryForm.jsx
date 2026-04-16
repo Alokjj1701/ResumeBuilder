@@ -1,4 +1,6 @@
-import { useCallback } from 'react';
+import { useState, useCallback } from 'react';
+import AiRewriteButton from '../AI/AiRewriteButton';
+import SummaryGenerator from '../AI/SummaryGenerator';
 
 const MAX_LENGTH = 600;
 
@@ -8,7 +10,9 @@ const EXAMPLE_SUMMARIES = [
   'Results-driven marketing professional with expertise in digital campaigns...',
 ];
 
-export default function SummaryForm({ value, onChange }) {
+export default function SummaryForm({ value, onChange, experience, skills }) {
+  const [showGenerator, setShowGenerator] = useState(false);
+
   const handleChange = useCallback((e) => {
     if (e.target.value.length <= MAX_LENGTH) {
       onChange(e.target.value);
@@ -22,18 +26,58 @@ export default function SummaryForm({ value, onChange }) {
 
   return (
     <div>
+      {/* Generate with AI button */}
+      <button
+        type="button"
+        onClick={() => setShowGenerator(true)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          width: '100%',
+          padding: '10px 14px',
+          borderRadius: '10px',
+          border: '1.5px dashed #ddd6fe',
+          background: 'linear-gradient(135deg, #faf5ff, #f5f3ff)',
+          color: '#7c3aed',
+          fontSize: '0.875rem',
+          fontWeight: 700,
+          cursor: 'pointer',
+          marginBottom: '16px',
+          justifyContent: 'center',
+          transition: 'border-color 0.15s, background 0.15s',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.borderColor = '#7c3aed';
+          e.currentTarget.style.background = '#ede9fe';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.borderColor = '#ddd6fe';
+          e.currentTarget.style.background = 'linear-gradient(135deg, #faf5ff, #f5f3ff)';
+        }}
+      >
+        ✨ Generate with AI — get 3 options instantly
+      </button>
+
       <div className="form-group">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.375rem' }}>
           <label className="form-label" htmlFor="summary">
             Professional Summary / Objective
           </label>
-          <span style={{
-            fontSize: '0.75rem',
-            color: isAtLimit ? 'var(--danger)' : isNearLimit ? 'var(--warning)' : 'var(--text-light)',
-            fontWeight: isNearLimit ? 500 : 400,
-          }}>
-            {charCount}/{MAX_LENGTH}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <AiRewriteButton
+              content={value}
+              sectionType="summary"
+              onAccept={(rewritten) => onChange(rewritten.slice(0, MAX_LENGTH))}
+            />
+            <span style={{
+              fontSize: '0.75rem',
+              color: isAtLimit ? 'var(--danger)' : isNearLimit ? 'var(--warning)' : 'var(--text-light)',
+              fontWeight: isNearLimit ? 500 : 400,
+            }}>
+              {charCount}/{MAX_LENGTH}
+            </span>
+          </div>
         </div>
         <textarea
           id="summary"
@@ -64,6 +108,15 @@ export default function SummaryForm({ value, onChange }) {
           Aim for 2-4 sentences (150-300 characters for ATS optimization)
         </p>
       </div>
+
+      {showGenerator && (
+        <SummaryGenerator
+          experience={experience || []}
+          skills={skills || []}
+          onAccept={(text) => onChange(text.slice(0, MAX_LENGTH))}
+          onClose={() => setShowGenerator(false)}
+        />
+      )}
 
       {/* Tips */}
       <div style={{

@@ -10,6 +10,7 @@ import com.resumebuilder.entity.PendingRegistration;
 import com.resumebuilder.entity.RefreshToken;
 import com.resumebuilder.entity.User;
 import com.resumebuilder.exception.EmailNotVerifiedException;
+import com.resumebuilder.service.OtpService;
 import com.resumebuilder.repository.PendingRegistrationRepository;
 import com.resumebuilder.repository.RefreshTokenRepository;
 import com.resumebuilder.repository.UserRepository;
@@ -43,6 +44,7 @@ public class AuthService implements UserDetailsService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final EmailService emailService;
+    private final OtpService otpService;
 
     @Value("${app.jwt.refresh-token-expiry-days:7}")
     private long refreshTokenExpiryDays;
@@ -262,6 +264,27 @@ public class AuthService implements UserDetailsService {
     @Transactional
     public void logoutAll(User user) {
         refreshTokenRepository.revokeAllByUser(user);
+    }
+
+    // ── Forgot Password ──────────────────────────────────────────────────────
+
+    @Transactional
+    public void forgotPassword(String email) {
+        // Silently succeed when email not found — prevents email enumeration
+        userRepository.findByEmail(email.toLowerCase().trim())
+                .ifPresent(user -> otpService.generateAndSendPasswordReset(user));
+    }
+
+    // ── Reset Password ───────────────────────────────────────────────────────
+
+    @Transactional
+    public void resetPassword(String email, String otp, String newPassword) {
+        User user = otpService.verify(email, otp, OtpService.PURPOSE_PASSWORD_RESET);
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+        // Revoke all active sessions so the old password can't be reused
+        refreshTokenRepository.revokeAllByUser(user);
+        log.info("Password reset completed for user: {}", user.getEmail());
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────

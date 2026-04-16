@@ -132,7 +132,7 @@ function resumeReducer(state, action) {
       return { ...state, loading: action.payload };
 
     case ActionTypes.SET_ERROR:
-      return { ...state, error: action.payload, loading: false, saveStatus: 'idle' };
+      return { ...state, error: action.payload, loading: false };
 
     case ActionTypes.SET_DIRTY:
       return { ...state, isDirty: action.payload };
@@ -181,6 +181,7 @@ export function ResumeProvider({ children }) {
       const response = await api.getResume(id);
       dispatch({ type: ActionTypes.SET_CURRENT_RESUME, payload: response.data });
     } catch (err) {
+      dispatch({ type: ActionTypes.SET_CURRENT_RESUME, payload: null });
       dispatch({
         type: ActionTypes.SET_ERROR,
         payload: err.displayMessage || 'Failed to load resume',
@@ -212,6 +213,21 @@ export function ResumeProvider({ children }) {
       throw err;
     }
   }, [state]);
+
+  // Create a resume from AI-generated sections (used by AiBuilderModal)
+  const createResumeFromSections = useCallback((sections, title, templateId = 'modern') => {
+    dispatch({
+      type: ActionTypes.SET_CURRENT_RESUME,
+      payload: {
+        id: null,
+        title: title || 'AI Generated Resume',
+        templateId: templateId || 'modern',
+        sections,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    });
+  }, []);
 
   // Create a new resume — loads with realistic dummy data by default
   const createNewResume = useCallback((templateId = 'modern', withDummyData = true) => {
@@ -314,6 +330,7 @@ export function ResumeProvider({ children }) {
     loadResume,
     saveResume,
     createNewResume,
+    createResumeFromSections,
     deleteResume: deleteResumeById,
     loadTemplates,
     updateSections,

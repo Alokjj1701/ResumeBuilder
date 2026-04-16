@@ -103,6 +103,16 @@ export const deleteResume = (id) => api.delete(`/api/resumes/${id}`);
 export const exportResumePdf = (id) =>
   api.get(`/api/resumes/${id}/export/pdf`, { responseType: 'blob' });
 
+export const sendResumePdfEmail = (id) =>
+  api.post(`/api/resumes/${id}/send-pdf-email`);
+
+// Sends the client-rendered PDF (correct template) to the user's email.
+export const sendResumePdfEmailWithBytes = (id, pdfBlob, fileName) => {
+  const form = new FormData();
+  form.append('pdf', pdfBlob, fileName || 'Resume.pdf');
+  return api.post(`/api/resumes/${id}/send-pdf-email`, form);
+};
+
 // ── Templates ─────────────────────────────────────────────────────────────────
 export const getAllTemplates = () => api.get('/api/templates');
 export const getTemplate = (id) => api.get(`/api/templates/${id}`);

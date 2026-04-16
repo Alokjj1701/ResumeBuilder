@@ -13,7 +13,7 @@ const STATS = [
   { value: '1-Click', label: 'PDF Export' },
 ];
 
-export default function HeroSection({ onCreateResume, onViewTemplates }) {
+export default function HeroSection({ onCreateResume, onViewTemplates, onAiBuilder }) {
   return (
     <section style={{ position: 'relative', overflow: 'hidden', background: '#06040f' }}>
       {/* Animated gradient orbs */}
@@ -88,6 +88,34 @@ export default function HeroSection({ onCreateResume, onViewTemplates }) {
           display: 'flex', gap: '0.875rem', flexWrap: 'wrap', justifyContent: 'center',
           marginBottom: '3.5rem',
         }}>
+          {/* AI Builder — premium CTA */}
+          <button
+            onClick={onAiBuilder}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
+              padding: '0.75rem 1.5rem',
+              background: 'linear-gradient(135deg, #7c3aed 0%, #a21caf 100%)',
+              color: '#fff', border: 'none', borderRadius: '100px',
+              fontSize: '0.9375rem', fontWeight: 700, cursor: 'pointer',
+              boxShadow: '0 0 0 1px rgba(167,139,250,0.3), 0 8px 24px rgba(124,58,237,0.5)',
+              transition: 'opacity 0.15s, transform 0.15s',
+              letterSpacing: '-0.1px',
+              position: 'relative', overflow: 'hidden',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.92'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.transform = 'translateY(0)'; }}
+          >
+            {/* Shimmer sweep */}
+            <span style={{
+              position: 'absolute', inset: 0,
+              background: 'linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.18) 50%, transparent 60%)',
+              backgroundSize: '200% 100%',
+              animation: 'hero-shimmer 2.4s ease infinite',
+            }} />
+            <span style={{ fontSize: '1.1rem', position: 'relative', zIndex: 1 }}>✨</span>
+            <span style={{ position: 'relative', zIndex: 1 }}>Create Resume with AI</span>
+          </button>
+
           <button
             onClick={onCreateResume}
             className="hero-cta-primary"
@@ -95,7 +123,7 @@ export default function HeroSection({ onCreateResume, onViewTemplates }) {
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
             </svg>
-            Create Resume — It's Free
+            Start from Template
           </button>
           <button
             onClick={onViewTemplates}
@@ -142,6 +170,13 @@ export default function HeroSection({ onCreateResume, onViewTemplates }) {
         background: 'linear-gradient(to bottom, transparent, var(--bg))',
         pointerEvents: 'none',
       }} />
+
+      <style>{`
+        @keyframes hero-shimmer {
+          0%   { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
+        }
+      `}</style>
     </section>
   );
 }

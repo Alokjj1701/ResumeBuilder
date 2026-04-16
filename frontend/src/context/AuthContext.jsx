@@ -56,6 +56,17 @@ export function AuthProvider({ children }) {
     return data;
   }, []);
 
+  // ── Forgot / Reset Password ──────────────────────────────────────────────
+  const forgotPassword = useCallback(async (email) => {
+    const { data } = await authApi.post('/auth/forgot-password', { email });
+    return data;
+  }, []);
+
+  const resetPassword = useCallback(async (email, otp, newPassword) => {
+    const { data } = await authApi.post('/auth/reset-password', { email, otp, newPassword });
+    return data;
+  }, []);
+
   // ── Logout ───────────────────────────────────────────────────────────────
   const logout = useCallback(async () => {
     try {
@@ -76,6 +87,8 @@ export function AuthProvider({ children }) {
     verifyOtp,
     resendOtp,
     logout,
+    forgotPassword,
+    resetPassword,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

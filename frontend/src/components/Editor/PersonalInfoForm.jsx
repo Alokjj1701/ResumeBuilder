@@ -11,6 +11,11 @@ export default function PersonalInfoForm({ data, onChange }) {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Photo must be under 5 MB. Please choose a smaller image.');
+      e.target.value = '';
+      return;
+    }
     const reader = new FileReader();
     reader.onload = (ev) => {
       onChange({ ...data, photo: ev.target.result });

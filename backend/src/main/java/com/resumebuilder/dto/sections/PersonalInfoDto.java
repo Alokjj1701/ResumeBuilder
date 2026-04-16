@@ -18,4 +18,5 @@ public class PersonalInfoDto {
     private String website;
     private String linkedin;
     private String github;
+    private String photo;
 }

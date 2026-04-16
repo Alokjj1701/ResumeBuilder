@@ -1,10 +1,12 @@
 package com.resumebuilder.controller;
 
 import com.resumebuilder.dto.auth.AuthResponse;
+import com.resumebuilder.dto.auth.ForgotPasswordRequest;
 import com.resumebuilder.dto.auth.LoginRequest;
 import com.resumebuilder.dto.auth.RegisterRequest;
 import com.resumebuilder.dto.auth.RegisterResponse;
 import com.resumebuilder.dto.auth.ResendOtpRequest;
+import com.resumebuilder.dto.auth.ResetPasswordRequest;
 import com.resumebuilder.dto.auth.VerifyOtpRequest;
 import com.resumebuilder.entity.User;
 import com.resumebuilder.service.AuthService;
@@ -115,13 +117,33 @@ public class AuthController {
         );
     }
 
+    // ── Forgot Password ──────────────────────────────────────────────────────
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<Map<String, String>> forgotPassword(
+            @Valid @RequestBody ForgotPasswordRequest request) {
+        authService.forgotPassword(request.getEmail());
+        // Always 200 — never reveal whether the email exists
+        return ResponseEntity.ok(Map.of("message",
+                "If an account exists for this email, a password reset code has been sent."));
+    }
+
+    // ── Reset Password ───────────────────────────────────────────────────────
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<Map<String, String>> resetPassword(
+            @Valid @RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request.getEmail(), request.getOtp(), request.getNewPassword());
+        return ResponseEntity.ok(Map.of("message", "Password reset successfully. You can now log in."));
+    }
+
     // ── Cookie helpers ───────────────────────────────────────────────────────
 
     private void setRefreshCookie(HttpServletResponse response, String tokenValue) {
         Cookie cookie = new Cookie("refreshToken", tokenValue);
         cookie.setHttpOnly(true);
         cookie.setSecure(secureCookie);
-        cookie.setPath("/auth/refresh");
+        cookie.setPath("/auth");
         cookie.setMaxAge(refreshTokenExpiryDays * 24 * 60 * 60);
         response.addCookie(cookie);
     }
@@ -130,7 +152,7 @@ public class AuthController {
         Cookie cookie = new Cookie("refreshToken", "");
         cookie.setHttpOnly(true);
         cookie.setSecure(secureCookie);
-        cookie.setPath("/auth/refresh");
+        cookie.setPath("/auth");
         cookie.setMaxAge(0);
         response.addCookie(cookie);
     }
