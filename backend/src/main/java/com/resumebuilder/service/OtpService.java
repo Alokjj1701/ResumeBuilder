@@ -8,7 +8,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,16 +29,13 @@ public class OtpService {
     @Value("${app.otp.expiry-minutes:10}")
     private int otpExpiryMinutes;
 
-    // ── Generate and send OTP ────────────────────────────────────────────────
-
     @Transactional
     public void generateAndSend(User user, String purpose) {
-        // Enforce resend cooldown — check if a recent OTP was already issued
         otpTokenRepository
                 .findFirstByUserAndPurposeAndIsUsedFalseOrderByCreatedAtDesc(user, purpose)
                 .ifPresent(existing -> {
                     if (existing.getCreatedAt() != null &&
-                        existing.getCreatedAt().plusSeconds(RESEND_COOLDOWN_SECONDS).isAfter(LocalDateTime.now())) {
+                            existing.getCreatedAt().plusSeconds(RESEND_COOLDOWN_SECONDS).isAfter(LocalDateTime.now())) {
                         long secondsLeft = java.time.Duration.between(
                                 LocalDateTime.now(),
                                 existing.getCreatedAt().plusSeconds(RESEND_COOLDOWN_SECONDS)
@@ -49,7 +45,6 @@ public class OtpService {
                     }
                 });
 
-        // Invalidate all previous active OTPs for this user + purpose
         otpTokenRepository.invalidateAllByUserAndPurpose(user, purpose);
 
         String code = generateCode();
@@ -65,15 +60,9 @@ public class OtpService {
                 .build();
 
         otpTokenRepository.save(otpToken);
-
-        // Email is sent after the OTP row is flushed. If sending fails the OTP
-        // row rolls back, but the user row (committed in AuthService.createUser)
-        // is unaffected — the user can retry via resend-otp.
         emailService.sendOtpEmail(user.getEmail(), code, user.getFullName());
         log.info("OTP generated for user: {} purpose: {}", user.getEmail(), purpose);
     }
-
-    // ── Verify OTP and mark user as verified ─────────────────────────────────
 
     @Transactional
     public User verify(String email, String otp, String purpose) {
@@ -84,21 +73,18 @@ public class OtpService {
                 .findFirstByUserAndPurposeAndIsUsedFalseOrderByCreatedAtDesc(user, purpose)
                 .orElseThrow(() -> new BadCredentialsException("No active verification code found. Please request a new one."));
 
-        // Check expiry
         if (token.getExpiresAt().isBefore(LocalDateTime.now())) {
             token.setUsed(true);
             otpTokenRepository.save(token);
             throw new BadCredentialsException("Verification code has expired. Please request a new one.");
         }
 
-        // Check attempt limit
         if (token.getAttemptCount() >= token.getMaxAttempts()) {
             token.setUsed(true);
             otpTokenRepository.save(token);
             throw new BadCredentialsException("Too many incorrect attempts. Please request a new code.");
         }
 
-        // Check code
         if (!token.getOtpCode().equals(otp)) {
             token.setAttemptCount(token.getAttemptCount() + 1);
             otpTokenRepository.save(token);
@@ -107,7 +93,6 @@ public class OtpService {
                     "Incorrect code. " + remaining + " attempt" + (remaining == 1 ? "" : "s") + " remaining.");
         }
 
-        // OTP is valid — mark used, mark user verified
         token.setUsed(true);
         otpTokenRepository.save(token);
 
@@ -119,8 +104,6 @@ public class OtpService {
         log.info("Email verified for user: {}", user.getEmail());
         return user;
     }
-
-    // ── Private helpers ──────────────────────────────────────────────────────
 
     private String generateCode() {
         int code = 100000 + new SecureRandom().nextInt(900000);
