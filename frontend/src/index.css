@@ -881,6 +881,65 @@ h6 { font-size: 0.875rem; font-weight: 600; line-height: 1.5; }
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 
+/* ===========================
+   Responsive — Mobile
+   Breakpoint: 768px
+   Desktop styles above are NEVER modified.
+   All rules below only activate on narrow screens.
+   =========================== */
+
+@media (max-width: 767px) {
+  /* Slightly smaller base font so content breathes */
+  html { font-size: 15px; }
+
+  /* Two-column form grids collapse to one column */
+  .form-grid-2 {
+    grid-template-columns: 1fr;
+  }
+
+  /* Modals go full-screen on mobile */
+  .modal-overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+  .modal {
+    max-width: 100%;
+    max-height: 92dvh;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    border-top-left-radius: var(--radius-xl);
+    border-top-right-radius: var(--radius-xl);
+  }
+
+  /* Hero orbs — smaller so they don't overflow */
+  .hero-orb-1 { width: 280px; height: 280px; top: -60px; right: -40px; }
+  .hero-orb-2 { width: 240px; height: 240px; bottom: -60px; left: -30px; }
+  .hero-orb-3 { width: 200px; height: 200px; }
+
+  /* Hero CTA buttons stack on very small screens */
+  .hero-cta-primary,
+  .hero-cta-ghost {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Touch-friendly minimum tap targets */
+  .btn { min-height: 44px; }
+  .btn-sm { min-height: 36px; }
+
+  /* Tag inputs: full width items on mobile */
+  .tag-input-container { min-height: 44px; }
+
+  /* ── Navbar: tighten padding and hide text-only links ── */
+  .home-nav {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+  .nav-page-link { display: none !important; }
+  .nav-logo-subtitle { display: none; }
+  .nav-user-name { display: none; }
+}
+
 /* ── Print / PDF export — captures the live template preview ── */
 @media print {
   @page {

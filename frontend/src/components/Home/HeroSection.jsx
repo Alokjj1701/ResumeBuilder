@@ -87,6 +87,7 @@ export default function HeroSection({ onCreateResume, onViewTemplates, onAiBuild
         <motion.div {...fadeUp(0.24)} style={{
           display: 'flex', gap: '0.875rem', flexWrap: 'wrap', justifyContent: 'center',
           marginBottom: '3.5rem',
+          width: '100%', maxWidth: '480px',
         }}>
           {/* AI Builder — premium CTA */}
           <button

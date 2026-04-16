@@ -1,0 +1,18 @@
+{
+  "name": "Resume Builder",
+  "short_name": "Resume",
+  "description": "Build ATS-friendly resumes that get you hired.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f9fafb",
+  "theme_color": "#4f46e5",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/vite.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

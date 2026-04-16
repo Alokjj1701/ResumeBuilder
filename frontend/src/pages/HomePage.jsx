@@ -285,7 +285,7 @@ function UserMenu({ user, onLogout }) {
         }}>
           {initials}
         </div>
-        <span style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--text)', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <span className="nav-user-name" style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--text)', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {user?.fullName || user?.email}
         </span>
         <svg
@@ -393,7 +393,7 @@ export default function HomePage() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
       {/* ── Navbar ── */}
-      <nav style={{
+      <nav className="home-nav" style={{
         position: 'sticky', top: 0, zIndex: 200,
         height: '60px',
         background: 'rgba(255,255,255,0.85)',
@@ -426,13 +426,14 @@ export default function HomePage() {
                 Craft
               </span>
             </div>
-            <div style={{ fontSize: '0.67rem', color: 'var(--text-lighter)', lineHeight: 1 }}>Build. Preview. Export.</div>
+            <div className="nav-logo-subtitle" style={{ fontSize: '0.67rem', color: 'var(--text-lighter)', lineHeight: 1 }}>Build. Preview. Export.</div>
           </div>
         </div>
 
         {/* Nav links + user */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
           <button
+            className="nav-page-link"
             onClick={handleViewTemplates}
             style={{ background: 'none', border: 'none', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-light)', cursor: 'pointer' }}
             onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text)'}
@@ -442,6 +443,7 @@ export default function HomePage() {
           </button>
           {state.resumes.length > 0 && (
             <button
+              className="nav-page-link"
               onClick={() => document.getElementById('your-resumes')?.scrollIntoView({ behavior: 'smooth' })}
               style={{ background: 'none', border: 'none', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-light)', cursor: 'pointer' }}
               onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text)'}

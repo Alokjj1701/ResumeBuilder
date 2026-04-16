@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import html2canvas from 'html2canvas';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useResume } from '../hooks/useResume';
+import useIsMobile from '../hooks/useIsMobile';
 import ResumeEditor from '../components/Editor/ResumeEditor';
 import ResumePreview from '../components/Preview/ResumePreview';
 import TemplateSelector from '../components/TemplateSelector/TemplateSelector';
@@ -58,6 +59,9 @@ export default function BuilderPage() {
     changeTemplate,
     clearError,
   } = useResume();
+
+  const isMobile = useIsMobile();
+  const [mobileTab, setMobileTab] = useState('edit'); // 'edit' | 'preview' | 'ai'
 
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
   const [showChat, setShowChat]           = useState(false);
@@ -302,6 +306,188 @@ export default function BuilderPage() {
 
   const currentTemplateId = state.currentResume?.templateId || state.selectedTemplateId || 'modern';
 
+  // ── Mobile layout ─────────────────────────────────────────────────────────
+  if (isMobile) {
+    return (
+      <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--bg)' }}>
+        {/* Mobile top bar */}
+        <header style={{
+          background: 'var(--white)',
+          borderBottom: '1px solid var(--border)',
+          padding: '0 0.75rem',
+          height: '52px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          flexShrink: 0,
+          zIndex: 50,
+        }}>
+          <button className="btn btn-ghost btn-sm" onClick={() => navigate('/')} style={{ padding: '0.5rem', flexShrink: 0 }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
+            </svg>
+          </button>
+
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {state.currentResume?.title || 'Untitled Resume'}
+            </div>
+          </div>
+
+          <SaveStatusIndicator status={state.saveStatus} />
+
+          <button
+            className="btn btn-secondary btn-sm"
+            onClick={() => setShowTemplateSelector(true)}
+            style={{ flexShrink: 0, padding: '0.375rem 0.625rem', fontSize: '0.75rem' }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
+              <rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" />
+            </svg>
+          </button>
+
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={handleExport}
+            disabled={pdfProgress > 0}
+            style={{ flexShrink: 0, padding: '0.375rem 0.75rem', fontSize: '0.8rem', minWidth: '70px' }}
+          >
+            {pdfProgress > 0 ? <span className="spinner spinner-sm" /> : 'Export'}
+          </button>
+        </header>
+
+        {/* Error banner */}
+        {state.error && (
+          <div className="alert alert-error" style={{ borderRadius: 0, border: 'none', borderBottom: '1px solid #fca5a5', fontSize: '0.8125rem' }}>
+            {state.error}
+            <button onClick={clearError} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: 'inherit' }}>✕</button>
+          </div>
+        )}
+
+        {/* Tab content */}
+        <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
+          {/* Edit tab */}
+          <div style={{ display: mobileTab === 'edit' ? 'flex' : 'none', flexDirection: 'column', height: '100%', overflow: 'hidden', background: 'var(--white)' }}>
+            <div style={{ flex: 1, overflowY: 'auto' }}>
+              <ResumeEditor />
+            </div>
+          </div>
+
+          {/* Preview tab */}
+          <div style={{ display: mobileTab === 'preview' ? 'flex' : 'none', flexDirection: 'column', height: '100%', overflow: 'auto', background: '#e5e7eb', alignItems: 'center', padding: '1rem' }}>
+            <div style={{
+              transformOrigin: 'top center',
+              transform: `scale(${Math.min((window.innerWidth - 32) / 794, 1)})`,
+              marginBottom: `calc((${Math.min((window.innerWidth - 32) / 794, 1)} - 1) * 1123px)`,
+            }}>
+              <ResumePreview />
+            </div>
+          </div>
+
+          {/* AI tab */}
+          <div style={{ display: mobileTab === 'ai' ? 'flex' : 'none', flexDirection: 'column', height: '100%', overflowY: 'auto', background: 'var(--bg)', gap: '0' }}>
+            <AtsScorePanel sections={state.currentResume?.sections} saveStatus={state.saveStatus} />
+            <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <button
+                className="btn btn-sm"
+                onClick={() => { setShowJdMatcher(true); setShowChat(false); }}
+                style={{ background: '#faf5ff', color: '#7c3aed', border: '1px solid #ddd6fe', fontWeight: 600, justifyContent: 'center', padding: '0.75rem' }}
+              >
+                🎯 JD Match — Tailor resume to a job description
+              </button>
+              <button
+                className="btn btn-sm"
+                onClick={() => { setShowChat(true); setShowJdMatcher(false); }}
+                style={{ background: '#faf5ff', color: '#7c3aed', border: '1px solid #ddd6fe', fontWeight: 600, justifyContent: 'center', padding: '0.75rem' }}
+              >
+                ✨ AI Coach — Chat about your resume
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom tab bar */}
+        <nav style={{
+          display: 'flex',
+          background: 'var(--white)',
+          borderTop: '1px solid var(--border)',
+          flexShrink: 0,
+          height: '56px',
+        }}>
+          {[
+            { id: 'edit',    label: 'Edit',    icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> },
+            { id: 'preview', label: 'Preview', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> },
+            { id: 'ai',      label: 'AI',      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setMobileTab(tab.id)}
+              style={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '3px',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                color: mobileTab === tab.id ? 'var(--brand)' : 'var(--text-light)',
+                fontSize: '0.7rem',
+                fontWeight: mobileTab === tab.id ? 700 : 400,
+                borderTop: `2px solid ${mobileTab === tab.id ? 'var(--brand)' : 'transparent'}`,
+                transition: 'color 0.15s',
+              }}
+            >
+              {tab.icon}
+              {tab.label}
+            </button>
+          ))}
+        </nav>
+
+        {/* Modals (same as desktop) */}
+        {showTemplateSelector && (
+          <TemplateSelector selectedId={currentTemplateId} onSelect={handleTemplateSelect} onClose={() => setShowTemplateSelector(false)} />
+        )}
+        {showChat && (
+          <AiChatPanel sections={state.currentResume?.sections} onApply={handleChatApply} onClose={() => setShowChat(false)} />
+        )}
+        {showJdMatcher && (
+          <JdMatcherPanel sections={state.currentResume?.sections} onAcceptAll={handleJdAccept} onClose={() => setShowJdMatcher(false)} />
+        )}
+
+        {/* Toast container */}
+        <div style={{ position: 'fixed', bottom: '72px', left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', gap: '8px', zIndex: 500, alignItems: 'center', pointerEvents: 'none', width: '90vw' }}>
+          {toasts.map((toast) => (
+            <div key={toast.id} style={{
+              display: 'flex', alignItems: 'center', gap: '8px',
+              padding: '10px 14px', borderRadius: '12px',
+              background: toast.type === 'error' ? '#fef2f2' : '#f0fdf4',
+              border: `1px solid ${toast.type === 'error' ? '#fecaca' : '#bbf7d0'}`,
+              boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+              fontSize: '0.8125rem', fontWeight: 500,
+              color: toast.type === 'error' ? '#dc2626' : '#166534',
+              width: '100%', animation: 'toastIn 0.25s ease', pointerEvents: 'auto',
+            }}>
+              <span style={{ flex: 1 }}>{toast.message}</span>
+              {toast.action && (
+                <button type="button" onClick={() => toast.action.onClick(toast.id)}
+                  style={{ padding: '4px 10px', borderRadius: '8px', border: 'none', background: '#7c3aed', color: '#fff', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                  {toast.action.label}
+                </button>
+              )}
+              <button type="button" onClick={() => removeToast(toast.id)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', opacity: 0.6 }}>✕</button>
+            </div>
+          ))}
+        </div>
+        <style>{`@keyframes toastIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }`}</style>
+      </div>
+    );
+  }
+
+  // ── Desktop layout (unchanged) ────────────────────────────────────────────
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--bg)' }}>
       {/* Top Toolbar */}
