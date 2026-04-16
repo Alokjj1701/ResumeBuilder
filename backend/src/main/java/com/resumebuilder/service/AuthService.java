@@ -53,10 +53,26 @@ public class AuthService implements UserDetailsService {
 
     // ── Register ─────────────────────────────────────────────────────────────
 
-    @Transactional
     public RegisterResponse register(RegisterRequest request) {
         String email = request.getEmail().toLowerCase().trim();
 
+        // Save the user in its own transaction so the commit happens before
+        // we attempt to send the OTP email. A Resend failure must not roll
+        // back the newly created user row.
+        User user = createUser(email, request);
+        log.info("New user registered (unverified): {}", user.getEmail());
+
+        // Generate OTP (DB commit) then send email — failures here are email-only
+        otpService.generateAndSend(user, OtpService.PURPOSE_EMAIL_VERIFY);
+
+        return RegisterResponse.builder()
+                .email(email)
+                .message("We've sent a 6-digit code to " + email + ". Enter it to activate your account.")
+                .build();
+    }
+
+    @Transactional
+    public User createUser(String email, RegisterRequest request) {
         if (userRepository.existsByEmail(email)) {
             throw new IllegalArgumentException("An account with this email already exists");
         }
@@ -70,16 +86,7 @@ public class AuthService implements UserDetailsService {
                 .isActive(true)
                 .build();
 
-        userRepository.save(user);
-        log.info("New user registered (unverified): {}", user.getEmail());
-
-        // Generate OTP and send email (async)
-        otpService.generateAndSend(user, OtpService.PURPOSE_EMAIL_VERIFY);
-
-        return RegisterResponse.builder()
-                .email(email)
-                .message("We've sent a 6-digit code to " + email + ". Enter it to activate your account.")
-                .build();
+        return userRepository.save(user);
     }
 
     // ── Login ────────────────────────────────────────────────────────────────
