@@ -32,17 +32,8 @@ public class OtpService {
 
     // ── Generate and send OTP ────────────────────────────────────────────────
 
-    public void generateAndSend(User user, String purpose) {
-        // Persist the OTP inside its own transaction so the commit happens
-        // before we attempt to send the email. This ensures a Resend failure
-        // never rolls back the user row or the OTP row.
-        String code = saveOtp(user, purpose);
-        emailService.sendOtpEmail(user.getEmail(), code, user.getFullName());
-        log.info("OTP generated for user: {} purpose: {}", user.getEmail(), purpose);
-    }
-
     @Transactional
-    public String saveOtp(User user, String purpose) {
+    public void generateAndSend(User user, String purpose) {
         // Enforce resend cooldown — check if a recent OTP was already issued
         otpTokenRepository
                 .findFirstByUserAndPurposeAndIsUsedFalseOrderByCreatedAtDesc(user, purpose)
@@ -74,7 +65,12 @@ public class OtpService {
                 .build();
 
         otpTokenRepository.save(otpToken);
-        return code;
+
+        // Email is sent after the OTP row is flushed. If sending fails the OTP
+        // row rolls back, but the user row (committed in AuthService.createUser)
+        // is unaffected — the user can retry via resend-otp.
+        emailService.sendOtpEmail(user.getEmail(), code, user.getFullName());
+        log.info("OTP generated for user: {} purpose: {}", user.getEmail(), purpose);
     }
 
     // ── Verify OTP and mark user as verified ─────────────────────────────────
